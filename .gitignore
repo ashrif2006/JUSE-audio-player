@@ -1,0 +1,41 @@
+# Ignore build folders
+Builds/
+
+# Ignore JUCE auto-generated library code (optional, لو بتولدها بنفسك)
+JuceLibraryCode/
+
+# Ignore Visual Studio files and folders
+.vs/
+*.sln
+*.slnx
+*.vcxproj*
+*.vcxproj.filters
+*.user
+*.VC.db
+
+# Ignore Xcode files (لو بتشتغل على Mac)
+*.xcodeproj
+*.xcworkspace
+*.xcuserdata
+*.idea/
+*.DS_Store
+
+# Ignore binary files
+*.exe
+*.dll
+*.app
+*.o
+*.obj
+*.pdb
+*.a
+*.lib
+
+# Ignore VS Code settings folder
+.vscode/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore other temporary files
+*.log
+*.tmp
