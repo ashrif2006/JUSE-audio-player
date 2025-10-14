@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <JuceHeader.h>
 
@@ -31,7 +31,7 @@ public:
 private:
     //==============================================================================
     // Your private member variables go here...
-    juce::TextButton playPauseButton{ "Play" };
+    juce::TextButton playPauseButton{ "paly" };
     juce::TextButton muteButton{ "Mute" };
     juce::TextButton loopButton{ "Loop: Off" };
     juce::TextButton jumpBackButton{ "<< 5s" };
@@ -39,6 +39,9 @@ private:
     juce::TextButton loadButton{ "Load Audio" };
 
     juce::Slider volumeSlider;
+
+    juce::Label fileNameLabel;
+
 
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;

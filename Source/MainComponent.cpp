@@ -29,6 +29,11 @@ MainComponent::MainComponent()
 
     setSize(600, 200);                      // حجم الواجهة
     setAudioChannels(0, 2);
+    //اسم الملف الصوتي
+    addAndMakeVisible(fileNameLabel);
+    fileNameLabel.setText("No file loaded", juce::dontSendNotification);
+    fileNameLabel.setJustificationType(juce::Justification::centredLeft);
+
 
 }
 
@@ -81,6 +86,11 @@ void MainComponent::resized()
     loadButton.setBounds(x, y, w + 20, h);
 
     volumeSlider.setBounds(10, y + h + spacing, 200, 20);
+
+    volumeSlider.setBounds(10, y + h + spacing, 200, 20);
+
+    fileNameLabel.setBounds(220, y + h + spacing, getWidth() - 230, 20);
+
 }
 void MainComponent::buttonClicked(juce::Button* button)
 {
@@ -89,12 +99,13 @@ void MainComponent::buttonClicked(juce::Button* button)
         if (transportSource.isPlaying())
         {
             transportSource.stop();
-            playPauseButton.setButtonText("Play");
+            playPauseButton.setButtonText("play");
         }
         else
         {
             transportSource.start();
-            playPauseButton.setButtonText("Pause");
+            playPauseButton.setButtonText("||");
+
         }
     }
     else if (button == &muteButton)
@@ -139,6 +150,9 @@ void MainComponent::buttonClicked(juce::Button* button)
                 auto file = fc.getResult();
                 if (file.existsAsFile())
                 {
+                    // هنا نعرض اسم الملف في الـ Label
+                    fileNameLabel.setText(file.getFileName(), juce::dontSendNotification);
+
                     auto* reader = formatManager.createReaderFor(file);
                     if (reader != nullptr)
                     {
@@ -150,6 +164,7 @@ void MainComponent::buttonClicked(juce::Button* button)
                 }
             });
     }
+
 
 }
 
