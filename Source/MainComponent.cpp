@@ -1,11 +1,47 @@
 ﻿#include "MainComponent.h"
 
+
+
+// تحت الـ #include ... في بداية MainComponent.cpp
+
+juce::String readID3v1Artist(const juce::File& file)
+{
+    if (!file.existsAsFile())
+        return "File not found";
+
+    juce::FileInputStream inputStream(file);
+    if (!inputStream.openedOk())
+        return "Can't open file";
+
+    if (inputStream.getTotalLength() < 128)
+        return "File too small for ID3v1";
+
+    inputStream.setPosition(inputStream.getTotalLength() - 128);
+
+    char tag[3];
+    inputStream.read(tag, 3);
+
+    if (strncmp(tag, "TAG", 3) != 0)
+        return "No ID3v1 tag";
+
+    char title[30];
+    char artist[30];
+
+    inputStream.read(title, 30);
+    inputStream.read(artist, 30);
+
+    return juce::String(artist, 30).trim();
+}
+
+
+
 //==============================================================================
+
 MainComponent::MainComponent()
 {
     formatManager.registerBasicFormats();
 
-    // إضافة الأزرار للواجهة
+    // Add buttons
     addAndMakeVisible(playPauseButton);
     addAndMakeVisible(muteButton);
     addAndMakeVisible(loopButton);
@@ -13,8 +49,6 @@ MainComponent::MainComponent()
     addAndMakeVisible(jumpForwardButton);
     addAndMakeVisible(loadButton);
 
-
-    // تسجيل الأزرار مع الـ listener
     playPauseButton.addListener(this);
     muteButton.addListener(this);
     loopButton.addListener(this);
@@ -23,18 +57,20 @@ MainComponent::MainComponent()
     loadButton.addListener(this);
 
     addAndMakeVisible(volumeSlider);
-    volumeSlider.setRange(0.0, 1.0);        // المدى من 0 (صامت) إلى 1 (أعلى صوت)
-    volumeSlider.setValue(lastVolume);      // القيمة الابتدائية
+    volumeSlider.setRange(0.0, 1.0);
+    volumeSlider.setValue(lastVolume);
     volumeSlider.addListener(this);
 
-    setSize(600, 200);                      // حجم الواجهة
+    addAndMakeVisible(playlistBox);
+    playlistBox.setModel(this);
+
+    addAndMakeVisible(metadataLabel);
+    metadataLabel.setText("No file loaded", juce::dontSendNotification);
+    metadataLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    metadataLabel.setJustificationType(juce::Justification::centredLeft);
+
+    setSize(700, 350);
     setAudioChannels(0, 2);
-    //اسم الملف الصوتي
-    addAndMakeVisible(fileNameLabel);
-    fileNameLabel.setText("No file loaded", juce::dontSendNotification);
-    fileNameLabel.setJustificationType(juce::Justification::centredLeft);
-
-
 }
 
 MainComponent::~MainComponent()
@@ -49,6 +85,11 @@ void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate
 
 void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
+    if (readerSource.get() == nullptr)
+    {
+        bufferToFill.clearActiveBufferRegion();
+        return;
+    }
     transportSource.getNextAudioBlock(bufferToFill);
 }
 
@@ -57,41 +98,39 @@ void MainComponent::releaseResources()
     transportSource.releaseResources();
 }
 
-//==============================================================================
-void MainComponent::paint (juce::Graphics& g)
+void MainComponent::paint(juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-
-    g.setFont (juce::FontOptions (16.0f));
-    g.setColour (juce::Colours::white);
-    
+    g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
 }
 
 void MainComponent::resized()
 {
-    int x = 10, y = 10, w = 90, h = 30, spacing = 10;
+    int margin = 10;
+    int buttonW = 90, buttonH = 30, spacing = 10;
 
-    playPauseButton.setBounds(x, y, w, h);
-    x += w + spacing;
-    muteButton.setBounds(x, y, w, h);
-    x += w + spacing;
-    loopButton.setBounds(x, y, w + 20, h);
+    int x = margin, y = margin;
+    playPauseButton.setBounds(x, y, buttonW, buttonH);
+    x += buttonW + spacing;
+    muteButton.setBounds(x, y, buttonW, buttonH);
+    x += buttonW + spacing;
+    loopButton.setBounds(x, y, buttonW + 20, buttonH);
+    x += buttonW + 20 + spacing;
+    jumpBackButton.setBounds(x, y, buttonW, buttonH);
+    x += buttonW + spacing;
+    jumpForwardButton.setBounds(x, y, buttonW, buttonH);
 
-    x = 10; y += h + spacing;
-    jumpBackButton.setBounds(x, y, w, h);
-    x += w + spacing;
-    jumpForwardButton.setBounds(x, y, w, h);
-    x += w + spacing;
-    loadButton.setBounds(x, y, w + 20, h);
+    x = margin; y += buttonH + spacing;
+    loadButton.setBounds(x, y, buttonW + 20, buttonH);
 
-    volumeSlider.setBounds(10, y + h + spacing, 200, 20);
+    x += buttonW + 20 + spacing;
+    volumeSlider.setBounds(x, y + (buttonH / 4), 200, buttonH / 2);
 
-    volumeSlider.setBounds(10, y + h + spacing, 200, 20);
+    y += buttonH + spacing * 2;
+    playlistBox.setBounds(margin, y, getWidth() - 2 * margin, 150);
 
-    fileNameLabel.setBounds(220, y + h + spacing, getWidth() - 230, 20);
-
+    metadataLabel.setBounds(margin, getHeight() - 30, getWidth() - 2 * margin, 20);
 }
+
 void MainComponent::buttonClicked(juce::Button* button)
 {
     if (button == &playPauseButton)
@@ -99,13 +138,12 @@ void MainComponent::buttonClicked(juce::Button* button)
         if (transportSource.isPlaying())
         {
             transportSource.stop();
-            playPauseButton.setButtonText("play");
+            playPauseButton.setButtonText("Play");
         }
         else
         {
             transportSource.start();
             playPauseButton.setButtonText("||");
-
         }
     }
     else if (button == &muteButton)
@@ -127,7 +165,7 @@ void MainComponent::buttonClicked(juce::Button* button)
     {
         isLooping = !isLooping;
         loopButton.setButtonText(isLooping ? "Loop: On" : "Loop: Off");
-        if (readerSource.get() != nullptr)
+        if (readerSource != nullptr)
             readerSource->setLooping(isLooping);
     }
     else if (button == &jumpBackButton)
@@ -143,29 +181,31 @@ void MainComponent::buttonClicked(juce::Button* button)
     }
     else if (button == &loadButton)
     {
-        fileChooser = std::make_unique<juce::FileChooser>("Select an audio file...", juce::File{}, "*.wav;*.mp3");
-        fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-            [this](const juce::FileChooser& fc)
-            {
-                auto file = fc.getResult();
-                if (file.existsAsFile())
-                {
-                    // هنا نعرض اسم الملف في الـ Label
-                    fileNameLabel.setText(file.getFileName(), juce::dontSendNotification);
+        fileChooser = std::make_unique<juce::FileChooser>("Select audio files...", juce::File{}, "*.wav;*.mp3");
 
-                    auto* reader = formatManager.createReaderFor(file);
-                    if (reader != nullptr)
+        fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+            [this](const juce::FileChooser& chooser)
+            {
+                auto files = chooser.getResults();
+
+                for (auto& file : files)
+                {
+                    if (file.existsAsFile())
                     {
-                        readerSource.reset(new juce::AudioFormatReaderSource(reader, true));
-                        readerSource->setLooping(isLooping);
-                        transportSource.setSource(readerSource.get(), 0, nullptr, reader->sampleRate);
-                        transportSource.setGain(static_cast<float>(volumeSlider.getValue()));
+                        playlistFiles.add(file.getFullPathName());
                     }
+                }
+
+                playlistBox.updateContent();
+
+                if (!playlistFiles.isEmpty())
+                {
+                    currentFileIndex = 0;
+                    loadFile(playlistFiles[0]);
+                    playlistBox.selectRow(0);
                 }
             });
     }
-
-
 }
 
 void MainComponent::sliderValueChanged(juce::Slider* slider)
@@ -176,4 +216,63 @@ void MainComponent::sliderValueChanged(juce::Slider* slider)
         transportSource.setGain(lastVolume);
     }
 }
+
+int MainComponent::getNumRows()
+{
+    return playlistFiles.size();
+}
+
+void MainComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected)
+{
+    if (rowIsSelected)
+        g.fillAll(juce::Colours::lightblue);
+
+    if (rowNumber >= 0 && rowNumber < playlistFiles.size())
+    {
+        juce::String fileName = juce::File(playlistFiles[rowNumber]).getFileName();
+        g.setColour(juce::Colours::black);
+        g.drawText(fileName, 5, 0, width, height, juce::Justification::centredLeft, true);
+    }
+}
+
+void MainComponent::selectedRowsChanged(int lastRowSelected)
+{
+    if (lastRowSelected >= 0 && lastRowSelected < playlistFiles.size())
+    {
+        currentFileIndex = lastRowSelected;
+        loadFile(playlistFiles[currentFileIndex]);
+    }
+}
+
+void MainComponent::loadFile(const juce::String& path)
+{
+    juce::File file(path);
+
+    if (file.existsAsFile())
+    {
+        transportSource.stop();
+        transportSource.setSource(nullptr);
+        readerSource.reset();
+
+        std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(file));
+        if (reader != nullptr)
+        {
+            double sampleRate = reader->sampleRate;
+            readerSource.reset(new juce::AudioFormatReaderSource(reader.release(), true));
+            readerSource->setLooping(isLooping);
+            transportSource.setSource(readerSource.get(), 0, nullptr, sampleRate);
+            transportSource.setGain(static_cast<float>(volumeSlider.getValue()));
+
+            juce::String fileName = file.getFileName();
+            juce::String artist = readID3v1Artist(file);
+
+            juce::String info = "File: " + fileName;
+            if (artist.isNotEmpty())
+                info += " | Artist: " + artist;
+
+            metadataLabel.setText(info, juce::dontSendNotification);
+        }
+    }
+}
+
 
