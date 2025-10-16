@@ -1,9 +1,6 @@
-﻿#include "MainComponent.h"
+ #include "MainComponent.h"
 
-
-
-// تحت الـ #include ... في بداية MainComponent.cpp
-
+// دالة مساعدة لقراءة بيانات ID3v1
 juce::String readID3v1Artist(const juce::File& file)
 {
     if (!file.existsAsFile())
@@ -33,15 +30,11 @@ juce::String readID3v1Artist(const juce::File& file)
     return juce::String(artist, 30).trim();
 }
 
-
-
 //==============================================================================
 
 MainComponent::MainComponent()
 {
     formatManager.registerBasicFormats();
-
-
 
     // Add buttons
     addAndMakeVisible(playPauseButton);
@@ -54,7 +47,6 @@ MainComponent::MainComponent()
     addAndMakeVisible(waveformPlaceholder);
     waveformPlaceholder.setColour(juce::ResizableWindow::backgroundColourId, juce::Colours::orange);
 
-
     playPauseButton.addListener(this);
     muteButton.addListener(this);
     loopButton.addListener(this);
@@ -66,27 +58,28 @@ MainComponent::MainComponent()
     volumeSlider.setRange(0.0, 1.0);
     volumeSlider.setValue(lastVolume);
     volumeSlider.addListener(this);
-     volumeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
-     // رقم 6 - منزلق السرعة مع قيم محددة
+    volumeSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 20);
+
+    // رقم 6 - منزلق السرعة مع قيم محددة
     addAndMakeVisible(speedSlider);
-   speedSlider.setRange(0, 6); // 7 قيم: 0-6
- speedSlider.setValue(2);    // القيمة الافتراضية 1.0x (المؤشر 2)
- speedSlider.addListener(this);
- speedSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    speedSlider.setRange(0, 6); // 7 قيم: 0-6
+    speedSlider.setValue(2);    // القيمة الافتراضية 1.0x (المؤشر 2)
+    speedSlider.addListener(this);
+    speedSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
- // إضافة التسميات لقيم السرعة
- addAndMakeVisible(speedLabel);
- speedLabel.setText("Speed: 1.0x", juce::dontSendNotification);
- speedLabel.setColour(juce::Label::textColourId, juce::Colours::white);
- speedLabel.setJustificationType(juce::Justification::centredLeft);
+    // إضافة التسميات لقيم السرعة
+    addAndMakeVisible(speedLabel);
+    speedLabel.setText("Speed: 1.0x", juce::dontSendNotification);
+    speedLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    speedLabel.setJustificationType(juce::Justification::centredLeft);
 
- // رقم 9 - منزلق الموضع
- addAndMakeVisible(positionSlider);
- positionSlider.setRange(0.0, 1.0);
- positionSlider.addListener(this);
- positionSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    // رقم 9 - منزلق الموضع
+    addAndMakeVisible(positionSlider);
+    positionSlider.setRange(0.0, 1.0);
+    positionSlider.addListener(this);
+    positionSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
- // قائمة التشغيل
+    // قائمة التشغيل
     addAndMakeVisible(playlistBox);
     playlistBox.setModel(this);
 
@@ -94,18 +87,19 @@ MainComponent::MainComponent()
     metadataLabel.setText("No file loaded", juce::dontSendNotification);
     metadataLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     metadataLabel.setJustificationType(juce::Justification::centredLeft);
-     // رقم 9 - تسميات الوقت
- addAndMakeVisible(currentTimeLabel);
- addAndMakeVisible(totalTimeLabel);
- currentTimeLabel.setText("0:00", juce::dontSendNotification);
- totalTimeLabel.setText("0:00", juce::dontSendNotification);
- currentTimeLabel.setColour(juce::Label::textColourId, juce::Colours::white);
- totalTimeLabel.setColour(juce::Label::textColourId, juce::Colours::white);
- currentTimeLabel.setJustificationType(juce::Justification::centred);
- totalTimeLabel.setJustificationType(juce::Justification::centred);
 
- // بدء التايمر للتحديث المستمر
- startTimer(50); // تحديث كل 50 مللي ثانية
+    // رقم 9 - تسميات الوقت
+    addAndMakeVisible(currentTimeLabel);
+    addAndMakeVisible(totalTimeLabel);
+    currentTimeLabel.setText("0:00", juce::dontSendNotification);
+    totalTimeLabel.setText("0:00", juce::dontSendNotification);
+    currentTimeLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    totalTimeLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    currentTimeLabel.setJustificationType(juce::Justification::centred);
+    totalTimeLabel.setJustificationType(juce::Justification::centred);
+
+    // بدء التايمر للتحديث المستمر
+    startTimer(50); // تحديث كل 50 مللي ثانية
 
     setSize(700, 350);
     setAudioChannels(0, 2);
@@ -113,6 +107,7 @@ MainComponent::MainComponent()
 
 MainComponent::~MainComponent()
 {
+    stopTimer(); // إضافة هذا السطر
     shutdownAudio();
 }
 
@@ -148,7 +143,8 @@ void MainComponent::resized()
     // تقسيم النافذة لمستويات
     auto controlsArea = bounds.removeFromTop(40);
     auto sliderArea = bounds.removeFromTop(40);
-    auto waveformArea = bounds.removeFromTop(100); // هنستخدمها لاحقًا
+    auto speedArea = bounds.removeFromTop(40); // إضافة منطقة السرعة
+    auto waveformArea = bounds.removeFromTop(100);
     auto playlistArea = bounds.removeFromTop(getHeight() / 3);
     auto metadataArea = bounds.removeFromBottom(30);
 
@@ -163,8 +159,6 @@ void MainComponent::resized()
     loopButton.setBounds(controlsArea.removeFromLeft(buttonWidth + 20));
     controlsArea.removeFromLeft(spacing);
     jumpBackButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
-    waveformPlaceholder.setBounds(waveformArea);
-
     controlsArea.removeFromLeft(spacing);
     jumpForwardButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
 
@@ -179,7 +173,7 @@ void MainComponent::resized()
     speedLabel.setBounds(speedLabelArea);
     speedArea.removeFromLeft(10);
     speedSlider.setBounds(speedArea.removeFromLeft(200));
-    
+
     // --- رقم 9 - منطقة الشكل الموجي والموضع ---
     auto timeLabelsArea = waveformArea.removeFromBottom(20);
     waveformDisplay.setBounds(waveformArea);
@@ -191,14 +185,13 @@ void MainComponent::resized()
     currentTimeLabel.setBounds(timeLabelsArea.removeFromLeft(50));
     totalTimeLabel.setBounds(timeLabelsArea.removeFromRight(50));
 
-
-
     // --- الـ Playlist ---
     playlistBox.setBounds(playlistArea);
 
     // --- Metadata (اسم الأغنية + الفنان) ---
     metadataLabel.setBounds(metadataArea);
 }
+
 // رقم 9 - WaveformDisplay implementation
 WaveformDisplay::WaveformDisplay() : thumbnailCache(5), audioThumbnail(512, formatManager, thumbnailCache)
 {
@@ -249,10 +242,15 @@ void WaveformDisplay::setPosition(double pos)
     repaint();
 }
 
+void WaveformDisplay::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    repaint();
+}
+
 // رقم 9 - دالة التايمر للتحديث المستمر
 void MainComponent::timerCallback()
 {
-    if (transportSource.isPlaying() || transportSource.getCurrentPosition()>0.0)
+    if (transportSource.isPlaying() || transportSource.getCurrentPosition() > 0.0)
     {
         // تحديث منزلق الموضع
         double currentPos = transportSource.getCurrentPosition();
@@ -296,6 +294,7 @@ double MainComponent::getSpeedFromIndex(int index)
     default: return 1.0;
     }
 }
+
 // رقم 6 - دالة لتحديث تسمية السرعة
 void MainComponent::updateSpeedLabel()
 {
@@ -382,113 +381,35 @@ void MainComponent::buttonClicked(juce::Button* button)
     }
 }
 
-
-void MainComponent::buttonClicked(juce::Button* button)
-{
-    if (button == &playPauseButton)
-    {
-        if (transportSource.isPlaying())
-        {
-            transportSource.stop();
-            playPauseButton.setButtonText("Play");
-        }
-        else
-        {
-            transportSource.start();
-            playPauseButton.setButtonText("||");
-        }
-    }
-    else if (button == &muteButton)
-    {
-        isMuted = !isMuted;
-        if (isMuted)
-        {
-            lastVolume = static_cast<float>(volumeSlider.getValue());
-            transportSource.setGain(0.0f);
-            muteButton.setButtonText("Unmute");
-        }
-        else
-        {
-            transportSource.setGain(lastVolume);
-            muteButton.setButtonText("Mute");
-        }
-    }
-    else if (button == &loopButton)
-    {
-        isLooping = !isLooping;
-        loopButton.setButtonText(isLooping ? "Loop: On" : "Loop: Off");
-        if (readerSource != nullptr)
-            readerSource->setLooping(isLooping);
-    }
-    else if (button == &jumpBackButton)
-    {
-        double currentPos = transportSource.getCurrentPosition();
-        transportSource.setPosition(std::max(0.0, currentPos - 5.0));
-    }
-    else if (button == &jumpForwardButton)
-    {
-        double currentPos = transportSource.getCurrentPosition();
-        double length = transportSource.getLengthInSeconds();
-        transportSource.setPosition(std::min(length, currentPos + 5.0));
-    }
-    else if (button == &loadButton)
-    {
-        fileChooser = std::make_unique<juce::FileChooser>("Select audio files...", juce::File{}, "*.wav;*.mp3");
-
-        fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-            [this](const juce::FileChooser& chooser)
-            {
-                auto files = chooser.getResults();
-
-                for (auto& file : files)
-                {
-                    if (file.existsAsFile())
-                    {
-                        playlistFiles.add(file.getFullPathName());
-                    }
-                }
-
-                playlistBox.updateContent();
-
-                if (!playlistFiles.isEmpty())
-                {
-                    currentFileIndex = 0;
-                    loadFile(playlistFiles[0]);
-                    playlistBox.selectRow(0);
-                }
-            });
-    }
-}
-
-
 void MainComponent::sliderValueChanged(juce::Slider* slider)
 {
     if (slider == &volumeSlider && !isMuted)
     {
         lastVolume = static_cast<float>(volumeSlider.getValue());
         transportSource.setGain(lastVolume);
+    }
+    // رقم 6 - منزلق السرعة
+    else if (slider == &speedSlider)
+    {
+        int index = static_cast<int>(speedSlider.getValue());
+        double newSpeed = getSpeedFromIndex(index);
 
-         // رقم 6 - منزلق السرعة
- else if (slider == &speedSlider)
- {
-     int index = static_cast<int>(speedSlider.getValue());
-     double newSpeed = getSpeedFromIndex(index);
+        if (readerSource != nullptr && readerSource->getAudioFormatReader() != nullptr)
+        {
+            double originalSampleRate = readerSource->getAudioFormatReader()->sampleRate;
+            transportSource.setSource(readerSource.get(), 0, nullptr, originalSampleRate * newSpeed);
+        }
 
-     if (readerSource != nullptr && readerSource->getAudioFormatReader() != nullptr)
-     {
-         double originalSampleRate = readerSource->getAudioFormatReader()->sampleRate;
-         transportSource.setSource(readerSource.get(), 0, nullptr, originalSampleRate * newSpeed);
-     }
-
-     updateSpeedLabel();
- }
- // رقم 9 - منزلق الموضع
- else if (slider == &positionSlider)
- {
-     if (transportSource.getLengthInSeconds() > 0.0)
-     {
-         double newPosition = positionSlider.getValue() * transportSource.getLengthInSeconds();
-         transportSource.setPosition(newPosition);
+        updateSpeedLabel();
+    }
+    // رقم 9 - منزلق الموضع
+    else if (slider == &positionSlider)
+    {
+        if (transportSource.getLengthInSeconds() > 0.0)
+        {
+            double newPosition = positionSlider.getValue() * transportSource.getLengthInSeconds();
+            transportSource.setPosition(newPosition);
+        }
     }
 }
 
@@ -539,7 +460,8 @@ void MainComponent::loadFile(const juce::String& path)
             // رقم 6 - تطبيق السرعة الحالية
             int speedIndex = static_cast<int>(speedSlider.getValue());
             double currentSpeed = getSpeedFromIndex(speedIndex);
-            transportSource.setSource(readerSource.get(), 0, nullptr, sampleRate);
+            transportSource.setSource(readerSource.get(), 0, nullptr, sampleRate * currentSpeed);
+            
             transportSource.setGain(static_cast<float>(volumeSlider.getValue()));
 
             juce::String fileName = file.getFileName();
@@ -550,18 +472,16 @@ void MainComponent::loadFile(const juce::String& path)
                 info += " | Artist: " + artist;
 
             metadataLabel.setText(info, juce::dontSendNotification);
+
             // رقم 9 - تحديث الشكل الموجي
             waveformDisplay.loadFile(file);
-
+            
             // رقم 9 - إعادة تعيين تسميات الوقت
             currentTimeLabel.setText("0:00", juce::dontSendNotification);
             totalTimeLabel.setText(formatTime(transportSource.getLengthInSeconds()), juce::dontSendNotification);
 
             // رقم 6 - تحديث تسمية السرعة
             updateSpeedLabel();
-            
         }
     }
 }
-
-
