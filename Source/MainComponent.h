@@ -46,6 +46,8 @@ private:
     juce::TextButton loadButton{ "Load Files" };
 
     juce::Slider volumeSlider;
+    juce::Component waveformPlaceholder;
+
 
     juce::ListBox playlistBox;
 

@@ -41,6 +41,8 @@ MainComponent::MainComponent()
 {
     formatManager.registerBasicFormats();
 
+
+
     // Add buttons
     addAndMakeVisible(playPauseButton);
     addAndMakeVisible(muteButton);
@@ -48,6 +50,10 @@ MainComponent::MainComponent()
     addAndMakeVisible(jumpBackButton);
     addAndMakeVisible(jumpForwardButton);
     addAndMakeVisible(loadButton);
+
+    addAndMakeVisible(waveformPlaceholder);
+    waveformPlaceholder.setColour(juce::ResizableWindow::backgroundColourId, juce::Colours::orange);
+
 
     playPauseButton.addListener(this);
     muteButton.addListener(this);
@@ -105,31 +111,44 @@ void MainComponent::paint(juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    int margin = 10;
-    int buttonW = 90, buttonH = 30, spacing = 10;
+    auto bounds = getLocalBounds().reduced(10);
 
-    int x = margin, y = margin;
-    playPauseButton.setBounds(x, y, buttonW, buttonH);
-    x += buttonW + spacing;
-    muteButton.setBounds(x, y, buttonW, buttonH);
-    x += buttonW + spacing;
-    loopButton.setBounds(x, y, buttonW + 20, buttonH);
-    x += buttonW + 20 + spacing;
-    jumpBackButton.setBounds(x, y, buttonW, buttonH);
-    x += buttonW + spacing;
-    jumpForwardButton.setBounds(x, y, buttonW, buttonH);
+    // تقسيم النافذة لمستويات
+    auto controlsArea = bounds.removeFromTop(40);
+    auto sliderArea = bounds.removeFromTop(40);
+    auto waveformArea = bounds.removeFromTop(100); // هنستخدمها لاحقًا
+    auto playlistArea = bounds.removeFromTop(getHeight() / 3);
+    auto metadataArea = bounds.removeFromBottom(30);
 
-    x = margin; y += buttonH + spacing;
-    loadButton.setBounds(x, y, buttonW + 20, buttonH);
+    // --- الأزرار ---
+    auto buttonWidth = 90;
+    auto spacing = 10;
 
-    x += buttonW + 20 + spacing;
-    volumeSlider.setBounds(x, y + (buttonH / 4), 200, buttonH / 2);
+    playPauseButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
+    controlsArea.removeFromLeft(spacing);
+    muteButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
+    controlsArea.removeFromLeft(spacing);
+    loopButton.setBounds(controlsArea.removeFromLeft(buttonWidth + 20));
+    controlsArea.removeFromLeft(spacing);
+    jumpBackButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
+    waveformPlaceholder.setBounds(waveformArea);
 
-    y += buttonH + spacing * 2;
-    playlistBox.setBounds(margin, y, getWidth() - 2 * margin, 150);
+    controlsArea.removeFromLeft(spacing);
+    jumpForwardButton.setBounds(controlsArea.removeFromLeft(buttonWidth));
 
-    metadataLabel.setBounds(margin, getHeight() - 30, getWidth() - 2 * margin, 20);
+    // زرار التحميل + السلايدر
+    auto loadWidth = 110;
+    loadButton.setBounds(sliderArea.removeFromLeft(loadWidth));
+    sliderArea.removeFromLeft(spacing);
+    volumeSlider.setBounds(sliderArea);
+
+    // --- الـ Playlist ---
+    playlistBox.setBounds(playlistArea);
+
+    // --- Metadata (اسم الأغنية + الفنان) ---
+    metadataLabel.setBounds(metadataArea);
 }
+
 
 void MainComponent::buttonClicked(juce::Button* button)
 {
