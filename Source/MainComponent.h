@@ -6,6 +6,8 @@ class MainComponent : public juce::AudioAppComponent,
     public juce::Button::Listener,
     public juce::Slider::Listener,
     public juce::ListBoxModel
+    public juce::Timer
+
 {
 public:
     MainComponent();
@@ -30,6 +32,9 @@ public:
     int getNumRows() override;
     void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override;
     void selectedRowsChanged(int lastRowSelected) override;
+    // رقم 9 - وظائف التايمر
+    void timerCallback() override;
+
 
 private:
     void loadFile(const juce::String& path);
@@ -37,6 +42,7 @@ private:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     juce::AudioTransportSource transportSource;
+    std::unique_ptr<juce::FileChooser> fileChooser;
 
     juce::TextButton playPauseButton{ "Play" };
     juce::TextButton muteButton{ "Mute" };
@@ -61,6 +67,42 @@ private:
     bool isMuted{ false };
     bool isLooping{ false };
     float lastVolume{ 0.5f };
+         // رقم 6 - عناصر السرعة
+ juce::Slider speedSlider;
+ juce::Label speedLabel;
+ double getSpeedFromIndex(int index);
+ void updateSpeedLabel();
+
+ // رقم 9 - عناصر الشكل الموجي والموضع
+ WaveformDisplay waveformDisplay;
+ juce::Slider positionSlider;
+ juce::Label currentTimeLabel;
+ juce::Label totalTimeLabel;
+ juce::String formatTime(double seconds);
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+};
+// رقم 9 - كلاس الشكل الموجي
+class WaveformDisplay : public juce::Component, public juce::ChangeListener
+{
+public:
+    WaveformDisplay();
+    ~WaveformDisplay() override;
+
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+    void loadFile(const juce::File& file);
+    void setPosition(double pos);
+
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+private:
+    juce::AudioFormatManager formatManager;
+    juce::AudioThumbnailCache thumbnailCache;
+    juce::AudioThumbnail audioThumbnail;
+    double position = 0.0;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveformDisplay)
 };
