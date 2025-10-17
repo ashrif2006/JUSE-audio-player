@@ -101,7 +101,7 @@ MainComponent::MainComponent()
     // بدء التايمر للتحديث المستمر
     startTimer(50); // تحديث كل 50 مللي ثانية
 
-    setSize(700, 350);
+    setSize(700, 500);
     setAudioChannels(0, 2);
 }
 
@@ -189,7 +189,9 @@ void MainComponent::resized()
     playlistBox.setBounds(playlistArea);
 
     // --- Metadata (اسم الأغنية + الفنان) ---
-    metadataLabel.setBounds(metadataArea);
+    //metadataLabel.setBounds(metadataArea);
+    metadataLabel.setBounds(10, getHeight() - 30, getWidth() - 20, 20);
+
 }
 
 // رقم 9 - WaveformDisplay implementation
