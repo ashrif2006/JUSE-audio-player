@@ -10,7 +10,7 @@ public:
     MainComponent();
     ~MainComponent() override;
 
-    // AudioAppComponent methods
+    // AudioAppComponent methods.
     void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override;
     void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) override;
     void releaseResources() override;
